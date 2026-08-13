@@ -2,7 +2,7 @@
  * app.js
  * ----------------------------------------------------------------------------
  * Bootstraps chrome shared by every page: sticky header, footer, scroll
- * reveal animations, back-to-top button, and homepage category strip loading.
+ * reveal animations, back-to-top button, contact form handler, and homepage category strip loading.
  * ----------------------------------------------------------------------------
  */
 
@@ -27,6 +27,7 @@ export async function initApp() {
   initScrollReveal();
   initBackToTop();
   initWhatsAppButton();
+  initContactForm();
 }
 
 /**
@@ -115,6 +116,84 @@ async function initWhatsAppButton() {
     </svg>`;
     
   document.body.appendChild(btn);
+}
+
+/**
+ * Initializes and handles Contact Form submissions asynchronously.
+ */
+function initContactForm() {
+  const contactForm = document.querySelector('form') || document.getElementById('contact-form');
+  if (!contactForm) return;
+
+  contactForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // Collect field inputs safely based on typical attributes or placeholders
+    const inputs = contactForm.querySelectorAll('input, textarea');
+    let formData = {
+      name: '',
+      email: '',
+      phone: '',
+      service: 'General Inquiry',
+      message: ''
+    };
+
+    inputs.forEach(input => {
+      const type = (input.type || '').toLowerCase();
+      const nameAttr = (input.name || input.id || input.placeholder || '').toLowerCase();
+      const val = input.value.trim();
+
+      if (type === 'email' || nameAttr.includes('email')) {
+        formData.email = val;
+      } else if (type === 'tel' || nameAttr.includes('phone')) {
+        formData.phone = val;
+      } else if (nameAttr.includes('name')) {
+        formData.name = val;
+      } else if (nameAttr.includes('subject') || nameAttr.includes('service')) {
+        formData.service = val;
+      } else if (input.tagName === 'TEXTAREA' || nameAttr.includes('message')) {
+        formData.message = val;
+      }
+    });
+
+    // Fallback if specific inputs weren't caught by keyword matching
+    if (!formData.name && inputs[0]) formData.name = inputs[0].value.trim();
+    if (!formData.email && inputs[1]) formData.email = inputs[1].value.trim();
+    if (!formData.message && inputs[inputs.length - 1]) formData.message = inputs[inputs.length - 1].value.trim();
+
+    try {
+      const submitBtn = contactForm.querySelector('button[type="submit"]');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Sending...';
+      }
+
+      const response = await api.request({
+        action: 'sendContactMessage',
+        payload: formData
+      });
+
+      if (response && response.success) {
+        alert('Thank you! Your message has been sent successfully.');
+        contactForm.reset();
+      } else {
+        alert('Failed to send message. Please try again later.');
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Send Message';
+      }
+    } catch (err) {
+      console.error('Contact form submission error:', err);
+      alert('An error occurred while sending your message. Please reach out directly via WhatsApp.');
+      const submitBtn = contactForm.querySelector('button[type="submit"]');
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Send Message';
+      }
+    }
+  });
 }
 
 /**
