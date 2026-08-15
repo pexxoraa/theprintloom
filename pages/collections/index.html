@@ -89,7 +89,7 @@
 
 <script type="module">
   // All imports prefixed with ./ to satisfy ES Module relative path requirements, leveraging the <base> tag
-  import { initApp } from './js/app.js';
+  import { initApp, loadAllProducts } from './js/app.js';
   import { router } from './js/router.js';
   import { products } from './js/services/products.js';
   import { mountProductGrid } from './js/components/productCard.js';
@@ -195,14 +195,14 @@
     }
 
     try {
-      [allProducts, categories] = await Promise.all([
-        products.all(),
-        products.categories()
-      ]);
+        [allProducts, categories] = await Promise.all([
+            loadAllProducts(), // <-- This now fetches from both JSON and Google Sheets!
+            products.categories()
+        ]);
     } catch (err) {
-      console.error('Failed to load collections data:', err);
-      allProducts = [];
-      categories = [];
+        console.error('Failed to load collections data:', err);
+        allProducts = [];
+        categories = [];
     }
 
     const categoryParam = router.param('category');
