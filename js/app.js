@@ -217,7 +217,7 @@ export async function loadAllProducts() {
     // 2. Fetch Google Sheets Products
     try {
         // IMPORTANT: Replace this with your actual deployed Apps Script Web App URL
-        const SCRIPT_URL = 'PASTE_YOUR_WEB_APP_URL_HERE'; 
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyc8CE7Rm-EsLYdgxHfWqGmXnWE6PcnvRoFxNHpYQwEuwa0g1Ub8JCEVvLPiPD_wvWQ/exec'; 
         const sheetResponse = await fetch(`${SCRIPT_URL}?action=getProducts`);
         const sheetData = await sheetResponse.json();
         
