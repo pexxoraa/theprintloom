@@ -197,6 +197,42 @@ function initContactForm() {
 }
 
 /**
+ * Merges products from the local JSON file and the Google Sheets backend.
+ * This can be imported into your collections page or router to build the grid.
+ */
+export async function loadAllProducts() {
+    let localProducts = [];
+    let sheetProducts = [];
+
+    // 1. Fetch Local Products
+    try {
+        const localResponse = await fetch('data/products.json'); 
+        if (localResponse.ok) {
+            localProducts = await localResponse.json();
+        }
+    } catch (error) {
+        console.error("Error loading local products:", error);
+    }
+
+    // 2. Fetch Google Sheets Products
+    try {
+        // IMPORTANT: Replace this with your actual deployed Apps Script Web App URL
+        const SCRIPT_URL = 'PASTE_YOUR_WEB_APP_URL_HERE'; 
+        const sheetResponse = await fetch(`${SCRIPT_URL}?action=getProducts`);
+        const sheetData = await sheetResponse.json();
+        
+        if (sheetData.success) {
+            sheetProducts = sheetData.data;
+        }
+    } catch (error) {
+        console.error("Error loading Google Sheet products:", error);
+    }
+
+    // 3. Merge Both Arrays
+    return [...localProducts, ...sheetProducts];
+}
+
+/**
  * Stock UI Handler
  * Evaluates product stock and updates the UI accordingly.
  */
