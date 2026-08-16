@@ -10,6 +10,7 @@ import { renderNavbar } from './components/navbar.js';
 import { renderFooter } from './components/footer.js';
 import { router } from './router.js';
 import { api } from './services/api.js';
+import { CONFIG } from './services/config.js';
 
 export async function initApp() {
   const headerRoot = document.getElementById('site-header');
