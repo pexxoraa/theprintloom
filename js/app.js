@@ -205,6 +205,7 @@ export async function loadAllProducts() {
     let localProducts = [];
     let sheetProducts = [];
 
+    // Create a live timestamp to bust the browser cache!
     const cacheBuster = new Date().getTime();
 
     // 1. Fetch Local Products
@@ -218,21 +219,18 @@ export async function loadAllProducts() {
         console.error("Error loading local products:", error);
     }
 
-    // 2. Only hit Google Sheets when CATALOG.source is explicitly 'sheet' —
-    //    otherwise this silently adds network latency and mismatched product shapes
-    //    every single page load, which CONFIG.CATALOG.source: 'local' is meant to avoid.
-    if (CONFIG.CATALOG.source === 'sheet') {
-        try {
-            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyc8CE7Rm-EsLYdgxHfWqGmXnWE6PcnvRoFxNHpYQwEuwa0g1Ub8JCEVvLPiPD_wvWQ/exec';
-            const sheetResponse = await fetch(`${SCRIPT_URL}?action=getProducts&t=${cacheBuster}`);
-            const sheetData = await sheetResponse.json();
+    // 2. Fetch Google Sheets Products (always, regardless of CATALOG.source —
+    //    this is how live stock/new products from the Sheet show up on Collections)
+    try {
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyc8CE7Rm-EsLYdgxHfWqGmXnWE6PcnvRoFxNHpYQwEuwa0g1Ub8JCEVvLPiPD_wvWQ/exec';
+        const sheetResponse = await fetch(`${SCRIPT_URL}?action=getProducts&t=${cacheBuster}`);
+        const sheetData = await sheetResponse.json();
 
-            if (sheetData.success && Array.isArray(sheetData.data)) {
-                sheetProducts = sheetData.data;
-            }
-        } catch (error) {
-            console.error("Error loading Google Sheet products:", error);
+        if (sheetData.success && Array.isArray(sheetData.data)) {
+            sheetProducts = sheetData.data;
         }
+    } catch (error) {
+        console.error("Error loading Google Sheet products:", error);
     }
 
     // 3. Merge arrays
@@ -240,10 +238,10 @@ export async function loadAllProducts() {
     const safeSheet = Array.isArray(sheetProducts) ? sheetProducts : [];
     let combined = [...safeLocal, ...safeSheet];
 
-    // 4. Normalize every product to a valid `images` array (the field
-    //    productCard.js and the product detail page actually read).
-    //    Handles products that only have a singular `image` string (e.g. from Sheets),
-    //    already-correct `images` arrays, or nothing at all.
+    // 4. Normalize every product to a valid `images` array — this is the field
+    //    productCard.js and the product detail page actually read from.
+    //    Handles rows that only have a singular `image` string (typical of a
+    //    flat Sheet row), already-correct `images` arrays, or nothing at all.
     combined = combined.map(product => {
         let images = Array.isArray(product.images) ? product.images.filter(Boolean) : [];
 
@@ -257,7 +255,7 @@ export async function loadAllProducts() {
             return `/theprintloom/assets/images/products/${filename}`;
         });
 
-        product.images = images; // this is the field productCard.js actually reads
+        product.images = images;
         return product;
     });
 
