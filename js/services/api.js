@@ -94,7 +94,7 @@ let _settingsCache = null;
 async function loadLocalProducts() {
   try {
     // Relative path leverages <base href="/theprintlooms/">
-    const res = await fetch('data/products.json');
+    const res = await fetch('/theprintloom/data/products.json');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
     return Array.isArray(json) ? json : (json.products || []);
@@ -106,7 +106,7 @@ async function loadLocalProducts() {
 
 async function loadLocalSettings() {
   try {
-    const res = await fetch('data/settings.json');
+    const res = await fetch('/theprintloom/data/settings.json');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } catch (err) {
