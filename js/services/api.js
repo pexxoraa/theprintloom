@@ -13,7 +13,7 @@
  * ----------------------------------------------------------------------------
  */
 
-import { CONFIG, getApiBaseUrl, isBackendConfigured } from './config.js';
+import { CONFIG, getApiBaseUrl, isBackendConfigured, resolvePath } from './config.js';
 
 class ApiError extends Error {
   constructor(message, status, payload) {
@@ -93,8 +93,10 @@ let _settingsCache = null;
 
 async function loadLocalProducts() {
   try {
-    // Relative path leverages <base href="/theprintlooms/">
-    const res = await fetch('/theprintloom/data/products.json');
+    // Uses CONFIG.DATA.products (built via resolvePath) instead of a
+    // hardcoded absolute path, so this still works when the site is
+    // deployed at a domain root rather than a /theprintloom subpath.
+    const res = await fetch(CONFIG.DATA.products);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
     return Array.isArray(json) ? json : (json.products || []);
@@ -106,7 +108,7 @@ async function loadLocalProducts() {
 
 async function loadLocalSettings() {
   try {
-    const res = await fetch('/theprintloom/data/settings.json');
+    const res = await fetch(resolvePath('data/settings.json'));
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } catch (err) {
