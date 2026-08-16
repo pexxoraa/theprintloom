@@ -203,13 +203,12 @@ function initContactForm() {
 export async function loadAllProducts() {
     let localProducts = [];
     let sheetProducts = [];
-    
-    // Create a live timestamp to bust the browser cache!
+
     const cacheBuster = new Date().getTime();
 
     // 1. Fetch Local Products
     try {
-        const localResponse = await fetch(`/theprintloom/data/products.json?t=${cacheBuster}`); 
+        const localResponse = await fetch(`/theprintloom/data/products.json?t=${cacheBuster}`);
         if (localResponse.ok) {
             const data = await localResponse.json();
             localProducts = Array.isArray(data) ? data : (data.products || data.data || []);
@@ -218,36 +217,46 @@ export async function loadAllProducts() {
         console.error("Error loading local products:", error);
     }
 
-    // 2. Fetch Google Sheets Products (Now forces FRESH data every load!)
-    try {
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyc8CE7Rm-EsLYdgxHfWqGmXnWE6PcnvRoFxNHpYQwEuwa0g1Ub8JCEVvLPiPD_wvWQ/exec'; 
-        // Notice the &t= added to the end of the URL below
-        const sheetResponse = await fetch(`${SCRIPT_URL}?action=getProducts&t=${cacheBuster}`);
-        const sheetData = await sheetResponse.json();
-        
-        if (sheetData.success && Array.isArray(sheetData.data)) {
-            sheetProducts = sheetData.data;
+    // 2. Only hit Google Sheets when CATALOG.source is explicitly 'sheet' —
+    //    otherwise this silently adds network latency and mismatched product shapes
+    //    every single page load, which CONFIG.CATALOG.source: 'local' is meant to avoid.
+    if (CONFIG.CATALOG.source === 'sheet') {
+        try {
+            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyc8CE7Rm-EsLYdgxHfWqGmXnWE6PcnvRoFxNHpYQwEuwa0g1Ub8JCEVvLPiPD_wvWQ/exec';
+            const sheetResponse = await fetch(`${SCRIPT_URL}?action=getProducts&t=${cacheBuster}`);
+            const sheetData = await sheetResponse.json();
+
+            if (sheetData.success && Array.isArray(sheetData.data)) {
+                sheetProducts = sheetData.data;
+            }
+        } catch (error) {
+            console.error("Error loading Google Sheet products:", error);
         }
-    } catch (error) {
-        console.error("Error loading Google Sheet products:", error);
     }
 
     // 3. Merge arrays
     const safeLocal = Array.isArray(localProducts) ? localProducts : [];
     const safeSheet = Array.isArray(sheetProducts) ? sheetProducts : [];
     let combined = [...safeLocal, ...safeSheet];
-    
-    // 4. Bulletproof Image Path Fixer
+
+    // 4. Normalize every product to a valid `images` array (the field
+    //    productCard.js and the product detail page actually read).
+    //    Handles products that only have a singular `image` string (e.g. from Sheets),
+    //    already-correct `images` arrays, or nothing at all.
     combined = combined.map(product => {
-        if (product.image) {
-            if (!product.image.startsWith('http') && !product.image.startsWith('/theprintloom/')) {
-                // Automatically build the exact path for the images
-                const filename = product.image.split('/').pop();
-                product.image = `/theprintloom/assets/images/products/${filename}`;
-            }
-        } else {
-            product.image = '/theprintloom/assets/images/products/placeholder.jpg';
+        let images = Array.isArray(product.images) ? product.images.filter(Boolean) : [];
+
+        if (images.length === 0 && product.image) {
+            images = [product.image];
         }
+
+        images = images.map(img => {
+            if (img.startsWith('http') || img.startsWith('/theprintloom/')) return img;
+            const filename = img.split('/').pop();
+            return `/theprintloom/assets/images/products/${filename}`;
+        });
+
+        product.images = images; // this is the field productCard.js actually reads
         return product;
     });
 
