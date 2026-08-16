@@ -204,32 +204,36 @@ export async function loadAllProducts() {
     let localProducts = [];
     let sheetProducts = [];
 
-    // 1. Fetch Local Products
+    // 1. Fetch Local Products safely
     try {
         const localResponse = await fetch('data/products.json'); 
         if (localResponse.ok) {
-            localProducts = await localResponse.json();
+            const data = await localResponse.json();
+            // Forces the data into an array, even if the JSON is an object
+            localProducts = Array.isArray(data) ? data : (data.products || data.data || []);
         }
     } catch (error) {
         console.error("Error loading local products:", error);
     }
 
-    // 2. Fetch Google Sheets Products
+    // 2. Fetch Google Sheets Products safely
     try {
-        // IMPORTANT: Replace this with your actual deployed Apps Script Web App URL
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyc8CE7Rm-EsLYdgxHfWqGmXnWE6PcnvRoFxNHpYQwEuwa0g1Ub8JCEVvLPiPD_wvWQ/exec'; 
         const sheetResponse = await fetch(`${SCRIPT_URL}?action=getProducts`);
         const sheetData = await sheetResponse.json();
         
-        if (sheetData.success) {
+        if (sheetData.success && Array.isArray(sheetData.data)) {
             sheetProducts = sheetData.data;
         }
     } catch (error) {
         console.error("Error loading Google Sheet products:", error);
     }
 
-    // 3. Merge Both Arrays
-    return [...localProducts, ...sheetProducts];
+    // 3. Guarantee both are arrays before merging
+    const safeLocal = Array.isArray(localProducts) ? localProducts : [];
+    const safeSheet = Array.isArray(sheetProducts) ? sheetProducts : [];
+    
+    return [...safeLocal, ...safeSheet];
 }
 
 /**
