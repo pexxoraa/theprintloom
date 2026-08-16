@@ -14,7 +14,7 @@ import { showToast } from './toast.js';
 import { CONFIG } from '../services/config.js';
 
 // Base path resolution for GitHub Pages subfolder hosting
-const BASE_PATH = window.location.pathname.includes('/theprintlooms') ? '/theprintlooms' : '';
+const BASE_PATH = window.location.pathname.includes('/theprintloom') ? '/theprintloom' : '';
 
 function resolveImagePath(path) {
   if (!path) return '';
@@ -27,8 +27,8 @@ function resolveImagePath(path) {
   let cleanPath = path.replace(/^(\.\/|\/)+/, '');
   
   // Prevent double prefixing if path already starts with the repository name
-  if (cleanPath.startsWith('theprintlooms/')) {
-    cleanPath = cleanPath.replace(/^theprintlooms\//, '');
+  if (cleanPath.startsWith('theprintloom/')) {
+    cleanPath = cleanPath.replace(/^theprintloom\//, '');
   }
 
   return BASE_PATH ? `${BASE_PATH}/${cleanPath}` : cleanPath;
