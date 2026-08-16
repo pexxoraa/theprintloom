@@ -204,12 +204,11 @@ export async function loadAllProducts() {
     let localProducts = [];
     let sheetProducts = [];
 
-    // 1. Fetch Local Products safely
+    // 1. Fetch Local Products safely (Fixed Absolute Path!)
     try {
         const localResponse = await fetch('/theprintloom/data/products.json'); 
         if (localResponse.ok) {
             const data = await localResponse.json();
-            // Forces the data into an array, even if the JSON is an object
             localProducts = Array.isArray(data) ? data : (data.products || data.data || []);
         }
     } catch (error) {
@@ -229,13 +228,21 @@ export async function loadAllProducts() {
         console.error("Error loading Google Sheet products:", error);
     }
 
-    // 3. Guarantee both are arrays before merging
+    // 3. Merge arrays
     const safeLocal = Array.isArray(localProducts) ? localProducts : [];
     const safeSheet = Array.isArray(sheetProducts) ? sheetProducts : [];
-    
-    return [...safeLocal, ...safeSheet];
-}
+    let combined = [...safeLocal, ...safeSheet];
 
+    // 4. Automatically fix image paths so you only have to type the filename in Google Sheets!
+    combined = combined.map(product => {
+        if (product.image && !product.image.includes('/')) {
+            product.image = `/theprintloom/assets/images/products/${product.image}`;
+        }
+        return product;
+    });
+
+    return combined;
+}
 /**
  * Stock UI Handler
  * Evaluates product stock and updates the UI accordingly.
