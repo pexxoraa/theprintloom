@@ -209,6 +209,7 @@ export async function loadAllProducts() {
         const localResponse = await fetch('/theprintloom/data/products.json'); 
         if (localResponse.ok) {
             const data = await localResponse.json();
+            // Forces the data into an array, even if the JSON is an object
             localProducts = Array.isArray(data) ? data : (data.products || data.data || []);
         }
     } catch (error) {
@@ -228,15 +229,28 @@ export async function loadAllProducts() {
         console.error("Error loading Google Sheet products:", error);
     }
 
-    // 3. Merge arrays
+    // 3. Guarantee both are arrays before merging
     const safeLocal = Array.isArray(localProducts) ? localProducts : [];
     const safeSheet = Array.isArray(sheetProducts) ? sheetProducts : [];
     let combined = [...safeLocal, ...safeSheet];
-
-    // 4. Automatically fix image paths so you only have to type the filename in Google Sheets!
+    
+    // 4. Bulletproof Image Path Fixer
     combined = combined.map(product => {
-        if (product.image && !product.image.includes('/')) {
-            product.image = `/theprintloom/assets/images/products/${product.image}`;
+        if (product.image) {
+            // Check if it's not already an absolute URL or path
+            if (!product.image.startsWith('http') && !product.image.startsWith('/theprintloom/')) {
+                // If you typed "assets/..." in the sheet/JSON, prepend the root folder
+                if (product.image.startsWith('assets/')) {
+                    product.image = `/theprintloom/${product.image}`;
+                } else {
+                    // If you just typed the filename (e.g. "A0056-02.jpg"), build the full path automatically
+                    const filename = product.image.split('/').pop();
+                    product.image = `/theprintloom/assets/images/products/${filename}`;
+                }
+            }
+        } else {
+            // Fallback placeholder if no image exists in the sheet row
+            product.image = '/theprintloom/assets/images/products/placeholder.jpg';
         }
         return product;
     });
