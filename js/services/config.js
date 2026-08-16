@@ -28,7 +28,10 @@ export const CONFIG = Object.freeze({
   },
 
   CATALOG: {
-    source: 'local', // 'local' | 'sheet'
+    source: 'sheet', // 'local' | 'sheet' — reads the product catalog from your Google Sheet.
+    // If the sheet ever returns 0 rows or the request fails, api.js
+    // automatically falls back to the local data/products.json so the
+    // site never shows an empty store.
   },
 
   DATA: {
