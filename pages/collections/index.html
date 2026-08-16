@@ -5,31 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Collections — The Print Loom</title>
 
-<!-- Base URL for GitHub Pages subfolder deployment -->
-<script>
-  // Compute the correct <base> dynamically so the site works when served
-  // from the domain root (local dev server, custom domain) AND when served
-  // from a GitHub Pages *project* subfolder.
-  (function () {
-    var path = window.location.pathname;
-    var base = /^\/theprintloom(\/|$)/.test(path) ? '/theprintloom/' : '/';
-    document.write('<base href="' + base + '">');
-  })();
-</script>
-
 <meta name="description" content="Browse power looms, handlooms, digital silk, linen, cotton sarees, and the bridal edit from The Print Loom.">
-<link rel="canonical" href="https://pexxoraa.github.io/the-printlooms-fixeed/pages/collections/index.html">
+<link rel="canonical" href="https://pexxoraa.github.io/theprintloom/pages/collections/index.html">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-<!-- Root-relative CSS paths (aligns with <base>) -->
-<link rel="stylesheet" href="css/variables.css">
-<link rel="stylesheet" href="css/base.css">
-<link rel="stylesheet" href="css/layout.css">
-<link rel="stylesheet" href="css/components.css">
-<link rel="stylesheet" href="css/pages.css">
-<link rel="stylesheet" href="css/animations.css">
-<link rel="stylesheet" href="css/utilities.css">
+<!-- Relative CSS paths (Going up two folders to root) -->
+<link rel="stylesheet" href="../../css/variables.css">
+<link rel="stylesheet" href="../../css/base.css">
+<link rel="stylesheet" href="../../css/layout.css">
+<link rel="stylesheet" href="../../css/components.css">
+<link rel="stylesheet" href="../../css/pages.css">
+<link rel="stylesheet" href="../../css/animations.css">
+<link rel="stylesheet" href="../../css/utilities.css">
 </head>
 <body>
 
@@ -38,7 +26,7 @@
 <main id="main-content" class="page-main">
   <div class="container">
     <nav class="breadcrumbs">
-      <a id="breadcrumb-home" href="index.html">Home</a> / 
+      <a id="breadcrumb-home" href="../../index.html">Home</a> / 
       <span id="breadcrumb-current">Collections</span>
     </nav>
   </div>
@@ -88,14 +76,14 @@
 <div id="site-footer"></div>
 
 <script type="module">
-  // All imports prefixed with ./ to satisfy ES Module relative path requirements, leveraging the <base> tag
-  import { initApp, loadAllProducts } from './js/app.js';
-  import { router } from './js/router.js';
-  import { products } from './js/services/products.js';
-  import { mountProductGrid } from './js/components/productCard.js';
-  import { renderPagination } from './js/components/pagination.js';
-  import { skeletonProductCards } from './js/components/loader.js';
-  import { CONFIG } from './js/services/config.js';
+  // All imports updated to use relative paths (going up two folders to root)
+  import { initApp, loadAllProducts } from '../../js/app.js';
+  import { router } from '../../js/router.js';
+  import { products } from '../../js/services/products.js';
+  import { mountProductGrid } from '../../js/components/productCard.js';
+  import { renderPagination } from '../../js/components/pagination.js';
+  import { skeletonProductCards } from '../../js/components/loader.js';
+  import { CONFIG } from '../../js/services/config.js';
 
   const PAGE_SIZE = 9;
   let allProducts = [];
@@ -196,7 +184,7 @@
 
     try {
         [allProducts, categories] = await Promise.all([
-            loadAllProducts(), // <-- This now fetches from both JSON and Google Sheets!
+            loadAllProducts(), 
             products.categories()
         ]);
     } catch (err) {
