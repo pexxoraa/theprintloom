@@ -206,7 +206,7 @@ export async function loadAllProducts() {
 
     // 1. Fetch Local Products safely
     try {
-        const localResponse = await fetch('data/products.json'); 
+        const localResponse = await fetch('/theprintloom/data/products.json'); 
         if (localResponse.ok) {
             const data = await localResponse.json();
             // Forces the data into an array, even if the JSON is an object
