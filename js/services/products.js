@@ -19,23 +19,14 @@ async function loadCatalog() {
     }
   }
 
-  // INTERCEPTOR: Dynamically reduce stock based on local purchases
-  return _cache.map(p => {
-    const deductKey = `ploom_stock_deduct_${p.id}`;
-    const deductedAmount = parseInt(localStorage.getItem(deductKey) || '0', 10);
-    
-    // Default to 10 if stock isn't explicitly set in your JSON
-    const originalStock = typeof p.stock === 'number' ? p.stock : 10;
-    let currentStock = originalStock - deductedAmount;
-
-    // AUTO-RESET: If stock hits 0 (or below), wipe the memory and reset to original
-    if (currentStock <= 0) {
-      currentStock = originalStock;
-      localStorage.removeItem(deductKey);
-    }
-
-    return { ...p, stock: currentStock };
-  });
+  // Stock is authoritative in the Google Sheet's "stock" column — the backend
+  // (Code.gs -> decrementStock_) decrements it for real when an order is
+  // placed, so every visitor always sees the true current count. No local
+  // simulation here; just make sure it's a number.
+  return _cache.map((p) => ({
+    ...p,
+    stock: typeof p.stock === 'number' ? p.stock : Number(p.stock) || 0,
+  }));
 }
 
 async function loadCategories() {
@@ -65,20 +56,14 @@ async function loadCategories() {
 }
 
 export const products = {
-  
-  // NEW: Bulletproof stock reduction using the raw cart lines
-  reduceStock(cartLines) {
-    if (!cartLines || !Array.isArray(cartLines)) return;
-    
-    cartLines.forEach(line => {
-      // Safely extract the ID whether it's a cart line or an order draft item
-      const pId = line.productId || (line.product && line.product.id) || line.id;
-      if (!pId) return; // Skip if no ID is found
-      
-      const key = `ploom_stock_deduct_${pId}`;
-      const currentDeducted = parseInt(localStorage.getItem(key) || '0', 10);
-      localStorage.setItem(key, currentDeducted + (line.quantity || 1));
-    });
+
+  // Stock is now decremented for real on the backend (Code.gs, when the
+  // order is saved to the Products sheet), so the frontend doesn't need to
+  // simulate it locally anymore. This just clears the in-memory cache so the
+  // very next `products.all()` call re-fetches fresh numbers from the Sheet
+  // instead of showing stale pre-order stock for the rest of the session.
+  reduceStock() {
+    _cache = null;
   },
 
   async all() {
