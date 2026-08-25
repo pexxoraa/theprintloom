@@ -25,16 +25,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-<!-- Relative to <base href="/theprintloom/"> above — do NOT prefix these with
-     ../../, since that resolves relative to the <base>, not this file's own
-     folder, and would walk past the site root entirely. -->
-<link rel="stylesheet" href="css/variables.css">
-<link rel="stylesheet" href="css/base.css">
-<link rel="stylesheet" href="css/layout.css">
-<link rel="stylesheet" href="css/components.css">
-<link rel="stylesheet" href="css/pages.css">
-<link rel="stylesheet" href="css/animations.css">
-<link rel="stylesheet" href="css/utilities.css">
+<!-- These 7 files are fetched by the browser's preload scanner, which reads
+     the raw HTML before the <script> above has run — so it resolves these
+     paths against this file's own location, ignoring the <base> tag
+     entirely. That's why these must stay relative to THIS file (../../),
+     even though the JS module imports further down the page correctly use
+     the <base>-relative form (they execute after <base> is in the DOM). -->
+<link rel="stylesheet" href="../../css/variables.css">
+<link rel="stylesheet" href="../../css/base.css">
+<link rel="stylesheet" href="../../css/layout.css">
+<link rel="stylesheet" href="../../css/components.css">
+<link rel="stylesheet" href="../../css/pages.css">
+<link rel="stylesheet" href="../../css/animations.css">
+<link rel="stylesheet" href="../../css/utilities.css">
 <script type="application/ld+json" id="product-schema"></script>
 </head>
 <body>
