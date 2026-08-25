@@ -7,13 +7,30 @@
 
 <!-- Base URL for GitHub Pages subfolder deployment -->
 <script>
-  // Compute the correct <base> dynamically so the site works when served
+  // Compute the correct base dynamically so the site works when served
   // from the domain root (local dev server, custom domain) AND when served
-  // from a GitHub Pages *project* subfolder.
+  // from a GitHub Pages *project* subfolder — then write out BOTH the
+  // <base> tag (used by the JS module imports further down, which execute
+  // after this point and correctly respect it) AND the CSS <link> tags as
+  // fully absolute URLs computed right here.
+  //
+  // Why absolute, not relative: the browser's speculative "preload
+  // scanner" fetches <link rel="stylesheet"> by reading the raw HTML
+  // before this script has actually run, so it resolves any relative href
+  // against this file's real location, ignoring <base> entirely. The
+  // "real" parser, once it reaches these tags after <base> exists, may
+  // resolve the same relative href AGAINST <base> instead. Two different
+  // mechanisms, two different answers — no relative path can satisfy both.
+  // An absolute path (starting with /) has only one possible resolution
+  // regardless of which mechanism does the resolving, so it's the only
+  // reliable option here.
   (function () {
     var path = window.location.pathname;
     var base = /^\/theprintloom(\/|$)/.test(path) ? '/theprintloom/' : '/';
     document.write('<base href="' + base + '">');
+    ['variables', 'base', 'layout', 'components', 'pages', 'animations', 'utilities'].forEach(function (name) {
+      document.write('<link rel="stylesheet" href="' + base + 'css/' + name + '.css">');
+    });
   })();
 </script>
 
@@ -24,20 +41,6 @@
 <meta property="og:image" id="og-image" content="">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-<!-- These 7 files are fetched by the browser's preload scanner, which reads
-     the raw HTML before the <script> above has run — so it resolves these
-     paths against this file's own location, ignoring the <base> tag
-     entirely. That's why these must stay relative to THIS file (../../),
-     even though the JS module imports further down the page correctly use
-     the <base>-relative form (they execute after <base> is in the DOM). -->
-<link rel="stylesheet" href="../../css/variables.css">
-<link rel="stylesheet" href="../../css/base.css">
-<link rel="stylesheet" href="../../css/layout.css">
-<link rel="stylesheet" href="../../css/components.css">
-<link rel="stylesheet" href="../../css/pages.css">
-<link rel="stylesheet" href="../../css/animations.css">
-<link rel="stylesheet" href="../../css/utilities.css">
 <script type="application/ld+json" id="product-schema"></script>
 </head>
 <body>
