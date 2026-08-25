@@ -36,6 +36,25 @@ export function normalizeProductImages(product) {
     .filter(Boolean);
 }
 
+/**
+ * A Sheet image cell (or even a local JSON entry) is often just a bare
+ * filename like "A0042-Bigger-Tulips.jpg" with no folder — someone typed
+ * or pasted the filename only. Treated as a path as-is, the browser
+ * requests it relative to whatever page it's on (e.g.
+ * pages/product/A0042-Bigger-Tulips.jpg, or even the site root), which
+ * 404s. Every real product photo actually lives in
+ * /assets/images/products/, so bare filenames (and full Drive/http URLs,
+ * which are left untouched) are resolved against that folder here — once,
+ * for every product, everywhere images are read.
+ */
+export function resolveProductImages(product) {
+  return normalizeProductImages(product).map((img) => {
+    if (img.startsWith('http') || img.startsWith('data:')) return img;
+    const filename = img.split('/').pop();
+    return resolvePath(`assets/images/products/${filename}`);
+  });
+}
+
 async function loadCatalog() {
   if (!_cache) {
     try {
@@ -54,7 +73,7 @@ async function loadCatalog() {
   return _cache.map((p) => ({
     ...p,
     stock: typeof p.stock === 'number' ? p.stock : Number(p.stock) || 0,
-    images: normalizeProductImages(p),
+    images: resolveProductImages(p),
   }));
 }
 
