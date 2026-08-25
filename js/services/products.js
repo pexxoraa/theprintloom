@@ -8,6 +8,34 @@ import { CONFIG, resolvePath } from './config.js';
 let _cache = null;
 let _categories = null;
 
+/**
+ * A row from a Google Sheet is always flat — every cell is a plain string,
+ * never a real array. So a sheet product typically arrives as a single
+ * `image` (or `images`) *string*, sometimes with several URLs separated by
+ * a comma/pipe/newline if someone pasted more than one. Every image-reading
+ * component (productCard.js, the product detail page, navbar.js) expects
+ * `product.images` to already be a proper array — so we guarantee that
+ * shape here, once, for every product regardless of where it came from
+ * (local JSON already provides a real array; the Sheet does not).
+ */
+export function normalizeProductImages(product) {
+  const raw = product.images ?? product.Images ?? product.image ?? product.Image
+    ?? product['Image URL'] ?? product.imageUrl ?? product.photo ?? product.Photo ?? '';
+
+  let images;
+  if (Array.isArray(raw)) {
+    images = raw;
+  } else if (typeof raw === 'string') {
+    images = raw.split(/[,|\n]/);
+  } else {
+    images = [];
+  }
+
+  return images
+    .map((img) => (typeof img === 'string' ? img.trim() : img))
+    .filter(Boolean);
+}
+
 async function loadCatalog() {
   if (!_cache) {
     try {
@@ -26,6 +54,7 @@ async function loadCatalog() {
   return _cache.map((p) => ({
     ...p,
     stock: typeof p.stock === 'number' ? p.stock : Number(p.stock) || 0,
+    images: normalizeProductImages(p),
   }));
 }
 
