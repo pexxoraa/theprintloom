@@ -10,7 +10,8 @@ import { renderNavbar } from './components/navbar.js';
 import { renderFooter } from './components/footer.js';
 import { router } from './router.js';
 import { api } from './services/api.js';
-import { CONFIG } from './services/config.js';
+import { CONFIG, resolvePath } from './services/config.js';
+import { normalizeProductImages } from './services/products.js';
 
 export async function initApp() {
   const headerRoot = document.getElementById('site-header');
@@ -209,8 +210,13 @@ export async function loadAllProducts() {
     const cacheBuster = new Date().getTime();
 
     // 1. Fetch Local Products
+    // Uses CONFIG.DATA.products (which resolves the correct base path for
+    // wherever the site is actually deployed) instead of a hardcoded
+    // '/theprintloom/...' path — the hardcoded version silently 404'd (and
+    // so returned zero local products) on any deployment that isn't a
+    // GitHub Pages project site at that exact subpath.
     try {
-        const localResponse = await fetch(`/theprintloom/data/products.json?t=${cacheBuster}`);
+        const localResponse = await fetch(`${CONFIG.DATA.products}?t=${cacheBuster}`);
         if (localResponse.ok) {
             const data = await localResponse.json();
             localProducts = Array.isArray(data) ? data : (data.products || data.data || []);
@@ -222,8 +228,7 @@ export async function loadAllProducts() {
     // 2. Fetch Google Sheets Products (always, regardless of CATALOG.source —
     //    this is how live stock/new products from the Sheet show up on Collections)
     try {
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyc8CE7Rm-EsLYdgxHfWqGmXnWE6PcnvRoFxNHpYQwEuwa0g1Ub8JCEVvLPiPD_wvWQ/exec';
-        const sheetResponse = await fetch(`${SCRIPT_URL}?action=getProducts&t=${cacheBuster}`);
+        const sheetResponse = await fetch(`${CONFIG.API.gasBaseUrl}?action=getProducts&t=${cacheBuster}`, { cache: 'no-store' });
         const sheetData = await sheetResponse.json();
 
         if (sheetData.success && Array.isArray(sheetData.data)) {
@@ -240,21 +245,15 @@ export async function loadAllProducts() {
 
     // 4. Normalize every product to a valid `images` array — this is the field
     //    productCard.js and the product detail page actually read from.
-    //    Handles rows that only have a singular `image` string (typical of a
-    //    flat Sheet row), already-correct `images` arrays, or nothing at all.
-    combined = combined.map(product => {
-        let images = Array.isArray(product.images) ? product.images.filter(Boolean) : [];
-
-        if (images.length === 0 && product.image) {
-            images = [product.image];
-        }
-
-        images = images.map(img => {
-            if (img.startsWith('http') || img.startsWith('/theprintloom/')) return img;
+    //    Reuses the same normalizer products.js uses for the home page, so
+    //    Collections and Home treat Sheet rows identically instead of two
+    //    different (and previously inconsistent) implementations.
+    combined = combined.map((product) => {
+        const images = normalizeProductImages(product).map((img) => {
+            if (img.startsWith('http') || img.startsWith('data:')) return img;
             const filename = img.split('/').pop();
-            return `/theprintloom/assets/images/products/${filename}`;
+            return resolvePath(`assets/images/products/${filename}`);
         });
-
         product.images = images;
         return product;
     });
