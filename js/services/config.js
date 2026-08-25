@@ -76,8 +76,36 @@ export const CONFIG = Object.freeze({
   },
 });
 
+/**
+ * Google Sheets image columns are usually pasted as normal "share" links
+ * (e.g. https://drive.google.com/file/d/FILE_ID/view?usp=sharing). Those
+ * URLs open Drive's HTML preview page, not the raw image bytes, so an
+ * <img src="..."> pointed at one renders a broken image. This extracts the
+ * file ID from any of Drive's common share-link shapes and rewrites it to
+ * Google's image CDN (lh3.googleusercontent.com), which serves the actual
+ * image and is safe to hotlink.
+ */
+function toDirectDriveImageUrl(url) {
+  const patterns = [
+    /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/,      // .../file/d/FILE_ID/view
+    /drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/,      // .../open?id=FILE_ID
+    /drive\.google\.com\/uc\?(?:export=[a-z]+&)?id=([a-zA-Z0-9_-]+)/, // .../uc?id=FILE_ID
+    /[?&]id=([a-zA-Z0-9_-]+)/,                             // any other ...?id=FILE_ID
+  ];
+  for (const re of patterns) {
+    const match = url.match(re);
+    if (match && match[1]) {
+      return `https://lh3.googleusercontent.com/d/${match[1]}=w1000`;
+    }
+  }
+  return url;
+}
+
 /** Helper to convert any image path into a full GitHub Pages safe URL */
 export function resolveImagePath(path) {
+  if (typeof path === 'string' && path.includes('drive.google.com')) {
+    return toDirectDriveImageUrl(path);
+  }
   return resolvePath(path);
 }
 
