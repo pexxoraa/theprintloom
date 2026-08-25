@@ -55,11 +55,41 @@ export function resolveProductImages(product) {
   });
 }
 
+/**
+ * Builds a lookup so a product's category matches regardless of whether the
+ * Sheet has the internal id ("cat-power-looms"), the slug ("power-looms"),
+ * or — the realistic case, since someone is typing this by hand into a
+ * spreadsheet — the human-readable name ("Power Looms"). Every key is
+ * lowercased/trimmed so casing and stray whitespace in the Sheet don't
+ * break the match either.
+ */
+export function buildCategoryLookup(categories) {
+  const lookup = new Map();
+  (categories || []).forEach((c) => {
+    [c.id, c.slug, c.name].filter(Boolean).forEach((key) => {
+      lookup.set(String(key).trim().toLowerCase(), c.id);
+    });
+  });
+  return lookup;
+}
+
+/** Rewrites product.category to the canonical category id using the lookup above. */
+export function resolveProductCategory(product, categoryLookup) {
+  const rawCategory = (product.category ?? '').toString().trim();
+  const matchedId = categoryLookup.get(rawCategory.toLowerCase());
+  return matchedId ? { ...product, category: matchedId } : product;
+}
+
 async function loadCatalog() {
   if (!_cache) {
     try {
-      _cache = await api.getProducts();
-      if (!_cache) _cache = [];
+      const [rawProducts, categories] = await Promise.all([
+        api.getProducts().catch((err) => { console.error('Error loading catalog:', err); return []; }),
+        loadCategories(),
+      ]);
+
+      const categoryLookup = buildCategoryLookup(categories);
+      _cache = (rawProducts || []).map((p) => resolveProductCategory(p, categoryLookup));
     } catch (err) {
       console.error('Error loading catalog:', err);
       _cache = [];
