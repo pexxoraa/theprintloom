@@ -10,8 +10,8 @@ import { renderNavbar } from './components/navbar.js';
 import { renderFooter } from './components/footer.js';
 import { router } from './router.js';
 import { api } from './services/api.js';
-import { CONFIG, resolvePath } from './services/config.js';
-import { normalizeProductImages } from './services/products.js';
+import { CONFIG } from './services/config.js';
+import { resolveProductImages } from './services/products.js';
 
 export async function initApp() {
   const headerRoot = document.getElementById('site-header');
@@ -170,10 +170,7 @@ function initContactForm() {
         submitBtn.textContent = 'Sending...';
       }
 
-      const response = await api.request({
-        action: 'sendContactMessage',
-        payload: formData
-      });
+      const response = await api.sendContactMessage(formData);
 
       if (response && response.success) {
         alert('Thank you! Your message has been sent successfully.');
@@ -243,18 +240,13 @@ export async function loadAllProducts() {
     const safeSheet = Array.isArray(sheetProducts) ? sheetProducts : [];
     let combined = [...safeLocal, ...safeSheet];
 
-    // 4. Normalize every product to a valid `images` array — this is the field
-    //    productCard.js and the product detail page actually read from.
-    //    Reuses the same normalizer products.js uses for the home page, so
-    //    Collections and Home treat Sheet rows identically instead of two
-    //    different (and previously inconsistent) implementations.
+    // 4. Normalize every product to a valid, correctly-pathed `images` array —
+    //    this is the field productCard.js and the product detail page
+    //    actually read from. Reuses the exact same resolver products.js uses
+    //    for the home page, so Collections and Home always treat Sheet rows
+    //    identically instead of drifting into two different implementations.
     combined = combined.map((product) => {
-        const images = normalizeProductImages(product).map((img) => {
-            if (img.startsWith('http') || img.startsWith('data:')) return img;
-            const filename = img.split('/').pop();
-            return resolvePath(`assets/images/products/${filename}`);
-        });
-        product.images = images;
+        product.images = resolveProductImages(product);
         return product;
     });
 
