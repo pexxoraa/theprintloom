@@ -11,7 +11,7 @@ import { renderFooter } from './components/footer.js';
 import { router } from './router.js';
 import { api } from './services/api.js';
 import { CONFIG } from './services/config.js';
-import { resolveProductImages } from './services/products.js';
+import { resolveProductImages, buildCategoryLookup, resolveProductCategory, products } from './services/products.js';
 
 export async function initApp() {
   const headerRoot = document.getElementById('site-header');
@@ -240,12 +240,17 @@ export async function loadAllProducts() {
     const safeSheet = Array.isArray(sheetProducts) ? sheetProducts : [];
     let combined = [...safeLocal, ...safeSheet];
 
-    // 4. Normalize every product to a valid, correctly-pathed `images` array —
-    //    this is the field productCard.js and the product detail page
-    //    actually read from. Reuses the exact same resolver products.js uses
-    //    for the home page, so Collections and Home always treat Sheet rows
-    //    identically instead of drifting into two different implementations.
+    // 4. Normalize every product to a valid, correctly-pathed `images` array,
+    //    and resolve `category` to the canonical category id (a hand-edited
+    //    Sheet row will usually have the category typed as a readable name
+    //    like "Power Looms" rather than the internal id "cat-power-looms" —
+    //    without this, that product silently never matches any category
+    //    filter on this page). Reuses the exact same resolvers products.js
+    //    uses for the home page, so Collections and Home always treat Sheet
+    //    rows identically instead of drifting into two different implementations.
+    const categoryLookup = buildCategoryLookup(await products.categories());
     combined = combined.map((product) => {
+        product = resolveProductCategory(product, categoryLookup);
         product.images = resolveProductImages(product);
         return product;
     });
