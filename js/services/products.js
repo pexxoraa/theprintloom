@@ -180,9 +180,14 @@ export const products = {
   async related(product, limit = 4) {
     if (!product) return [];
     const list = await loadCatalog();
-    return list
-      .filter((p) => p.id !== product.id && p.category === product.category)
-      .slice(0, limit);
+    const sameCategory = list.filter((p) => p.id !== product.id && p.category === product.category);
+    if (sameCategory.length > 0) return sameCategory.slice(0, limit);
+    // No other product shares this exact category (e.g. it's the only item
+    // in that category right now, or the Sheet's category text for this
+    // row doesn't match any known category). Rather than showing an empty
+    // "Related Sarees" section, fall back to any other products so the
+    // section is never blank.
+    return list.filter((p) => p.id !== product.id).slice(0, limit);
   },
 
   async search(query) {
