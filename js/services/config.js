@@ -15,6 +15,16 @@ export function resolvePath(path = '') {
     return path;
   }
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  // Idempotent: some values (e.g. product.images) are already fully
+  // resolved once by products.js before being cached, and then get passed
+  // through resolvePath/resolveImagePath a second time by whatever renders
+  // them (e.g. the product detail page). Without this guard, that second
+  // pass prepends the base path again — /theprintloom/theprintloom/... —
+  // and every image 404s. If the path already starts with our base path,
+  // leave it alone instead of stacking it on again.
+  if (BASE_PATH && cleanPath.startsWith(`${BASE_PATH.slice(1)}/`)) {
+    return `/${cleanPath}`;
+  }
   return BASE_PATH ? `${BASE_PATH}/${cleanPath}` : `/${cleanPath}`;
 }
 
